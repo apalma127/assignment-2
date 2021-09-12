@@ -24,14 +24,11 @@ theme_set(theme_minimal()) # Lisa's favorite theme
 hotels <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-11/hotels.csv')
 ```
 
-
-When you finish the assignment, remove the `#` from the options chunk at the top, so that messages and warnings aren't printed. If you are getting errors in your code, add `error = TRUE` so that the file knits. I would recommend not removing the `#` until you are completely finished.
-
 ## Put it on GitHub!        
 
-From now on, GitHub should be part of your routine when doing assignments. I recommend making it part of your process anytime you are working in R, but I'll make you show it's part of your process for assignments.
-
 **Task**: When you are finished with the assignment, post a link below to the GitHub repo for the assignment. 
+
+Link:  https://github.com/apalma127/assignment-2
 
 
 ## Machine Learning review and intro to `tidymodels`
@@ -40,10 +37,17 @@ Read through and follow along with the [Machine Learning review with an intro to
 
 **Tasks**:
 
-1. Read about the hotel booking data, `hotels`, on the [Tidy Tuesday page](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-02-11/readme.md) it came from. There is also a link to an article from the original authors. The outcome we will be predicting is called `is_canceled`. 
+1. Read about the hotel booking data, `hotels`, on the [Tidy Tuesday page](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-02-11/readme.md) it came from. There is also a link to an article from the original authors. The outcome we will be predicting is called `is_canceled`.
+
   - Without doing any analysis, what are some variables you think might be predictive and why?  
+  
+  
   _ What are some problems that might exist with the data? You might think about how it was collected and who did the collecting.  
+  
+  
   - If we construct a model, what type of conclusions will be able to draw from it?  
+  
+  
   
 2. Create some exploratory plots or table summaries of the variables in the dataset. Be sure to also examine missing values or other interesting values. You may want to adjust the `fig.width` and `fig.height` in the code chunk options.  
 
