@@ -134,6 +134,13 @@ hotels_testing <- testing(hotels_split)
 * Create dummy variables for all factors/categorical predictor variables (make sure you have `-all_outcomes()` in this part!!).  
 * Use the `prep()` and `juice()` functions to apply the steps to the training data just to check that everything went as planned.
 
+```{r}
+hotels_recipe <- recipe(is_cancelled ~ ., 
+                       data = hotels_training) %>% 
+                step_mutate_at()
+```
+
+
 5. In this step we will set up a LASSO model and workflow.
 
 * In general, why would we want to use LASSO instead of regular logistic regression? (HINT: think about what happens to the coefficients).  
