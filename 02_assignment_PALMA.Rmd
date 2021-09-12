@@ -31,29 +31,74 @@ hotels <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tid
 Link:  https://github.com/apalma127/assignment-2
 
 
-## Machine Learning review and intro to `tidymodels`
-
-Read through and follow along with the [Machine Learning review with an intro to the `tidymodels` package](https://advanced-ds-in-r.netlify.app/posts/2021-03-16-ml-review/) posted on the Course Materials page. 
-
 **Tasks**:
 
 1. Read about the hotel booking data, `hotels`, on the [Tidy Tuesday page](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-02-11/readme.md) it came from. There is also a link to an article from the original authors. The outcome we will be predicting is called `is_canceled`.
 
   - Without doing any analysis, what are some variables you think might be predictive and why?  
   
+  **When predicting if a booking results in a cancellation, I would expect the following to be predictive:** 
+            1. **deposit_type**: odds are if someone placed a deposit, they are more committed to the stay than no deposit; also, non refundable I would bet results in little to no cancels compared to refundable.
+            2. **is_repeated_guest**:  if someone is a routine stayer, you would expect repeated guests to predict well verry little cancellations as they have reason to stay and also have in the past
+            3. **lead_time**: if booked a lot out in advancr, you would think there would be less of a chance of cancellation compared to a late booking as far out in advance bookings most likely revolve around events that have been planned for a while
   
   _ What are some problems that might exist with the data? You might think about how it was collected and who did the collecting.  
+  
+  **One major problem is that this data is obtained and maintained by hotels who clearly have incentive to list to overstate how well they do.  By under reporting cancellations, the data may only reflect what the industry wants us to see: low amounts of cancellations, which reflect low amounts of lost revenue.  It is very quite possible heaps of cancellations are not included in this data to conceal some large sums of lost revenue that is being hidden.  I think this would be reporting bias.**
   
   
   - If we construct a model, what type of conclusions will be able to draw from it?  
   
+**We can look at the sign, size, and significance of the coefficients of the variables and determine which factors result in directional trends in cancellations.  For example for is_repeated_guest, if our model finds this variable has a large negative coefficient, we can see that, relative to the reference 0 value not being a repeat customer, repeat customers are way less likely to cancel than non-repeat customers.**
   
   
-2. Create some exploratory plots or table summaries of the variables in the dataset. Be sure to also examine missing values or other interesting values. You may want to adjust the `fig.width` and `fig.height` in the code chunk options.  
+2. **NEED TO FINISH**
+
+
+Create some exploratory plots or table summaries of the variables in the dataset. Be sure to also examine missing values or other interesting values. You may want to adjust the `fig.width` and `fig.height` in the code chunk options.
+
+```{r}
+hotels %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(vars(variable), 
+             scales = "free")
+```
+
+
+
+
+**Missing Values and Points of Interest**
+
+- is_cancelled: is pretty evenly spread as it relates to cancelled or not; it also has a lot of points being over 100k
+- adr: looks funky with most rates seeming to be super similar; can't quite tell but not sure if there is enough distinction in rates just at first glance
+- adults: tough to tell but looks like most had only a handful, not a big spread of data
+- arrival_date_day_of_month: is a really weird variable but seems normally spread
+- arrival_date_week_number: is weird as well but is pretty normally spread as well
+- arrival_date_year: for some reason there are a lot of 
+
+
+```{r}
+hotels %>% 
+  select(where(is.factor)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_bar() +
+  facet_wrap(vars(variable), 
+             scales = "free", 
+             nrow = 2)
+```
+
 
 3. First, we will do a couple things to get the data ready. 
 
-* I did the following for you: made outcome a factor (needs to be that way for logistic regression), made all character variables factoors, removed the year variable and some reservation status variables, and removed cases with missing values (not NULLs but true missing values).
+* I did the following for you: made outcome a factor (needs to be that way for logistic regression), made all character variables factors, removed the year variable and some reservation status variables, and removed cases with missing values (not NULLs but true missing values).
 
 * You need to split the data into a training and test set, stratifying on the outcome variable, `is_canceled`. Since we have a lot of data, split the data 50/50 between training and test. I have already `set.seed()` for you. Be sure to use `hotels_mod` in the splitting.
 
@@ -69,6 +114,13 @@ hotels_mod <- hotels %>%
   select(-n_miss_all)
 
 set.seed(494)
+
+hotels_split <- initial_split(hotels_mod, 
+                             prop = .5)
+hotels_split
+
+hotels_training <- training(hotels_split)
+hotels_testing <- testing(hotels_split)
 ```
 
 4. In this next step, we are going to do the pre-processing. Usually, I won't tell you exactly what to do here, but for your first exercise, I'll tell you the steps. 
