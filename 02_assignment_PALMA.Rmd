@@ -137,7 +137,7 @@ hotels_testing <- testing(hotels_split)
 ```{r}
 hotels_recipe <- recipe(is_canceled ~ ., 
               data = hotels_training) %>% 
-              step_mutate(children = as.numeric(children != 0),
+              step_mutate_at(children = as.numeric(children != 0),
                 babies = as.numeric(babies != 0),
                 previous_cancellations = as.numeric(previous_cancellations != 0),
                 agent = as.numeric(agent == "NULL"), 
@@ -282,18 +282,24 @@ a. What would this graph look like for a model with an accuracy that was close t
 b. Our predictions are classified as canceled if their predicted probability of canceling is greater than .5. If we wanted to have a high true positive rate, should we make the cutoff for predicted as canceled higher or lower than .5?  
 c. What happens to the true negative rate if we try to get a higher true positive rate? 
 
+
 8. Let's say that this model is going to be applied to bookings 14 days in advance of their arrival at each hotel, and someone who works for the hotel will make a phone call to the person who made the booking. During this phone call, they will try to assure that the person will be keeping their reservation or that they will be canceling in which case they can do that now and still have time to fill the room. How should the hotel go about deciding who to call? How could they measure whether it was worth the effort to do the calling? Can you think of another way they might use the model? 
+
+**_____**
 
 9. How might you go about questioning and evaluating the model in terms of fairness? Are there any questions you would like to ask of the people who collected the data? 
 
 
+**____**
 
 ## Bias and Fairness
 
-Read [Chapter 1: The Power Chapter](https://data-feminism.mitpress.mit.edu/pub/vi8obxh7/release/4) of Data Feminism by Catherine D'Ignazio and Lauren Klein. Write a 4-6 sentence paragraph reflecting on this chapter. As you reflect, you might consider responding to these specific questions. We will also have a discussion about these questions in class on Thursday.
+Matrix of Domination:
 
-* At the end of the "Matrix of Domination" section, they encourage us to "ask uncomfortable questions: who is doing the work of data science (and who is not)? Whose goals are prioritized in data science (and whose are not)? And who benefits from data science (and who is either overlooked or actively harmed)?" In general, how would you answer these questions? And why are they important?  
-* Can you think of any examples of missing datasets, like those described in the "Data Science for Whom?" section? Or was there an example there that surprised you?  
-* How did the examples in the "Data Science with Whose Interests and Goals?" section make you feel? What responsibility do companies have to prevent these things from occurring? Who is to blame?
+**It is always important to wonder about who is collecting data and why.  Everyone an d every entity has a motive usually with self interest in mind.  Groups actively overlooked and harmed are ones who are excluded from the field and from datatsets.  By not being in the field, there may be little to no advocacy for this group which can directly lead to exclusion from data and datasets, which are used for consequential decisions like redistricting and policiing, leading to a negative chain of events.**
 
+Missing Data:
 
+**As soon as I read missing data I immediately think of census returns, seeing articles describing how NY ended up losing a seat because they were 89 residents short.  If 89 more people in the massive state of NY felt like filling out the census was as consequential as it was, NY would have retained its entirety of the influence it holds in the electoral college.  This could be from a lack of feeling liek you matter and the government has your best interests in mind as well as a failure of education.**       
+
+Interest/Goals: **It is extremely disheartening to hear about the many matrices and cycles of oppression throughout society.  One that has always baffled me has been the housing issue for people with criminal records.  If our system is meant to focus on rehab and reform (questionable), yet society is focused on punishing and pointing out, this inevitably leads to the cycle of recidivism, further burying people in a hopeless situation.**
