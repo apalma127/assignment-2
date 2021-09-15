@@ -13,11 +13,16 @@ output:
 ```
 
 ```{r libraries}
-library(tidyverse)         # for graphing and data cleaning
-library(tidymodels)        # for modeling
-library(naniar)            # for analyzing missing values
+library(tidyverse)         # for reading in data, graphing, and cleaning
+library(tidymodels)        # for modeling ... tidily
+library(usemodels)         # for suggesting step_XXX() functions
+library(glmnet)            # for regularized regression, including LASSO
+library(naniar)            # for examining missing values (NAs)
+library(lubridate)         # for date manipulation
+library(moderndive)        # for King County housing data
 library(vip)               # for variable importance plots
-theme_set(theme_minimal()) # Lisa's favorite theme
+library(rmarkdown)         # for paged tables
+theme_set(theme_minimal()) 
 ```
 
 ```{r data}
@@ -52,7 +57,7 @@ Link:  https://github.com/apalma127/assignment-2
 **We can look at the sign, size, and significance of the coefficients of the variables and determine which factors result in directional trends in cancellations.  For example for is_repeated_guest, if our model finds this variable has a large negative coefficient, we can see that, relative to the reference 0 value not being a repeat customer, repeat customers are way less likely to cancel than non-repeat customers.**
   
   
-2. **NEED TO FINISH**
+2. 
 
 
 Create some exploratory plots or table summaries of the variables in the dataset. Be sure to also examine missing values or other interesting values. You may want to adjust the `fig.width` and `fig.height` in the code chunk options.
@@ -81,19 +86,6 @@ hotels %>%
 - arrival_date_week_number: is weird as well but is pretty normally spread as well
 - arrival_date_year: for some reason there are a lot of 
 
-
-```{r}
-hotels %>% 
-  select(where(is.factor)) %>% 
-  pivot_longer(cols = everything(),
-               names_to = "variable", 
-               values_to = "value") %>% 
-  ggplot(aes(x = value)) +
-  geom_bar() +
-  facet_wrap(vars(variable), 
-             scales = "free", 
-             nrow = 2)
-```
 
 
 3. First, we will do a couple things to get the data ready. 
@@ -137,15 +129,15 @@ hotels_testing <- testing(hotels_split)
 ```{r}
 hotels_recipe <- recipe(is_canceled ~ ., 
               data = hotels_training) %>% 
-              step_mutate_at(children = as.numeric(children != 0),
-                babies = as.numeric(babies != 0),
-                previous_cancellations = as.numeric(previous_cancellations != 0),
-                agent = as.numeric(agent == "NULL"), 
-                company = as.numeric(company == "NULL")) %>%
+              step_mutate_at(children, babies, previous_cancellations, 
+                             fn = ~ as.numeric(. != 0)) %>%
+              step_mutate_at(agent, company, 
+                             fn = ~ as.numeric(. == "NULL")) %>%
               step_mutate(country = fct_lump_n(country, 5)) %>%
               step_normalize(all_predictors(), 
-                         -all_nominal())%%
-              step_dummy(all_nominal(),-all_outcomes())
+                         -all_nominal()) %>%
+               step_dummy(all_nominal(),
+                         -all_outcomes())
               
 ```
 
@@ -159,17 +151,23 @@ hotels_recipe %>%
 5. In this step we will set up a LASSO model and workflow.
 
 * In general, why would we want to use LASSO instead of regular logistic regression? (HINT: think about what happens to the coefficients).  
+
 **Lasso shrinks coefficients to 0 based on penalty terms.  It allows for more interpretable and meaningful coefficients for the more determinative variables.**
 
 * Define the model type, set the engine, set the `penalty` argument to `tune()` as a placeholder, and set the mode. 
 * Create a workflow with the recipe and model.  
 
 ```{r}
+#hotels_lasso_mod <- 
+  #logistic_reg(mixture = 1) %>% 
+  #set_engine("glm", family = "binomial") %>%
+  #set_args(penalty = tune()) %>%
+  #set_mode("classification")
+
 hotels_lasso_mod <- 
-  linear_reg(mixture = 1) %>% 
-  set_engine("glmnet") %>% 
-  set_args(penalty = tune()) %>% 
-  set_mode("regression")
+  logistic_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet", family = "binomial") %>%
+  set_mode("classification")
 ```
 
 ```{r}
@@ -211,7 +209,6 @@ hotels_lasso_tune <-
 
 hotels_lasso_tune
 ```
-
 
 ```{r}
 hotels_lasso_tune %>% 
