@@ -295,7 +295,7 @@ hotels_lasso_final_mod %>%
 
 Which variables show up as the most important? Are you surprised?
 
-**____________________________________________**
+**reserved_room_type:  this makes sense.  this variable represents type of reservation so if something is reserved as an elite status suite you would expect different cancellations than a very small one bed commuter room.**
 
 
 ```{r}
@@ -309,7 +309,7 @@ hotels_lasso_test %>%
 
 How do they compare to the cross-validated metrics?
 
-**____________________________________________**
+**This value of 0.813814 is roughly the same as the cv estimate of 0.8161259**
 
 
 * Use the `collect_predictions()` function to find the predicted probabilities and classes for the test data. Save this to a new dataset called `preds`. Then, use the `conf_mat()` function from `dials` (part of `tidymodels`) to create a confusion matrix showing the predicted classes vs. the true classes. Compute the true positive rate (sensitivity), true negative rate (specificity), and accuracy. See this [Wikipedia](https://en.wikipedia.org/wiki/Confusion_matrix) reference if you (like me) tend to forget these definitions. Also keep in mind that a "positive" in this case is a cancellation (those are the 1's). 
