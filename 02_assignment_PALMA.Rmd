@@ -170,6 +170,8 @@ hotels_lasso_wf
 set.seed(494) # for reproducibility
 
 hotels_cv <- vfold_cv(hotels_training, v = 5)
+ctrl <- control_resamples(save_pred = TRUE)
+
 
 penalty_grid <- grid_regular(penalty(),
                              levels = 10)
@@ -278,56 +280,76 @@ How do they compare to the cross-validated metrics?
 **This value of 0.8126916 is so close (roughly the same) as the cv best estimate of 0.8145009.  That is good to see how the high 80% accuracy predicting the data used to create the model also results in a high 80% accuracy on new data.**
 
 
-* Use the `collect_predictions()` function to find the predicted probabilities and classes for the test data. Save this to a new dataset called `preds`. Then, use the `conf_mat()` function from `dials` (part of `tidymodels`) to create a confusion matrix showing the predicted classes vs. the true classes. Compute the true positive rate (sensitivity), true negative rate (specificity), and accuracy. See this [Wikipedia](https://en.wikipedia.org/wiki/Confusion_matrix) reference if you (like me) tend to forget these definitions. Also keep in mind that a "positive" in this case is a cancellation (those are the 1's). 
-
-
-```{r}
-resampled <-
-hotels_lasso_final_mod %>%
-tune_grid(recipe = hotels_recipe, grid = grid, resamples = hotels_cv, control = ctrl)
-
-```
-
 ```{r}
 preds <-
-  collect_predictions(resampled) 
+  collect_predictions(hotels_lasso_test) 
 ```
 
 ```{r}
-cm_hotels <- hotels_cv %>%
-  filter(Resample == "Fold01") %>%
-  conf_mat(obs, pred)
-cm_hotels
+conf_mat(preds, .pred_class, is_canceled)
 ```
 
 
+**Sensitivity = 0.8080848**
 
-* Use the `preds` dataset you just created to create a density plot of the predicted probabilities of canceling (the variable is called `.pred_1`), filling by `is_canceled`. Use an `alpha = .5` and `color = NA` in the `geom_density()`. Answer these questions: 
+```{r}
+(14333)/(3404 + 14333)
+```
 
+**Specificity = 0.8146391**
+
+```{r}
+(34179)/(34179 + 7777)
+```
+
+**Accuracy = 0.8126916**
+
+```{r}
+(34179 + 14333)/(34179+14333+7777+3404)
+```
+
+
+```{r}
+preds %>%
+  ggplot(aes(x = .pred_1, fill = is_canceled)) +
+  geom_density( alpha = 0.5, color = NA) 
+
+```
 
 
 a. What would this graph look like for a model with an accuracy that was close to 1?  
 
-**____**
+**We would see both curves as skew left as the pred accuracy would be high for both.**
+
 
 b. Our predictions are classified as canceled if their predicted probability of canceling is greater than .5. If we wanted to have a high true positive rate, should we make the cutoff for predicted as canceled higher or lower than .5?  
 
-**____**
+**A high true positive rate means that we capture a very high amount of positive rates based on our threshold. Thus, we should make the cut off LOWER, say at 0.35/0.4.  Thus, if we have an iffy prediction of cancelled at 0.48 porb for something that ends up being cancelled, we will actually capture that true positive prediction thanks to this lower threshold allowing for room and slight error**
 
 
 c. What happens to the true negative rate if we try to get a higher true positive rate? 
 
-**____**
+**It is inversely related.  Thus, if we lower the threshold to around 0.4, that means that we are capturing more positive rates, by predicting positive more often.  This causes a higher true negative rate based on predicting more positives.  If we lower the threshold largely to 0.2 for example, we get a really high true positive rate but yet those predicted at 0.3, 0.4, and even 0.4 or 0.55 that end up not actually being cancellations are predicted as cancellations.  With these not being cancellations but being predicted as cancellations, we are falsely predicting some negatives thus resulting in a much lower rate of negative prediction.**
 
 
-8. Let's say that this model is going to be applied to bookings 14 days in advance of their arrival at each hotel, and someone who works for the hotel will make a phone call to the person who made the booking. During this phone call, they will try to assure that the person will be keeping their reservation or that they will be canceling in which case they can do that now and still have time to fill the room. How should the hotel go about deciding who to call? How could they measure whether it was worth the effort to do the calling? Can you think of another way they might use the model? 
+8. Let's say that this model is going to be applied to bookings 14 days in advance of their arrival at each hotel, and someone who works for the hotel will make a phone call to the person who made the booking. During this phone call, they will try to assure that the person will be keeping their reservation or that they will be canceling in which case they can do that now and still have time to fill the room. 
 
-**_____**
+How should the hotel go about deciding who to call? 
 
-9. How might you go about questioning and evaluating the model in terms of fairness? Are there any questions you would like to ask of the people who collected the data? 
+How could they measure whether it was worth the effort to do the calling? 
 
+Can you think of another way they might use the model? 
 
-**____**
+**The hotel can use the algorithm factoring in variable importance, relying upon those queues.  For example, reserved room type P should be targeted and pursued as that is the most important variable as well as other specific room types.  They can measure the worth of the calling by looking at the success percentage  For example, they could pick an arbitrary 50% and say if we don't have a success rate of at least 50% sniffing out cancellations, it isn't worth the time.  Others may argue though that even one cancellation caught early allowing for rebooking is worth time.  This model can also be useful when used prior to / during booking.  If someone is a high risk for cancellations based upon certain variables at a time where the hotel has high demand, they can simply jack the prices and or use it to adjust to nonrefundable types. This does though set some tough precedent on biased treatment of guests.**
+
+9. How might you go about questioning and evaluating the model in terms of fairness? 
+
+Are there any questions you would like to ask of the people who collected the data? 
+
+**I would love to dive into how the data was collected, specifically who reported it and with what intentions.  I think it is important to consider how some of these variables play out in reality.  If certain rates like non-refundable rooms, which allow for affordable hotel rates, are now manipulated and only offered under certain situations, this may negatively effect the middle and lower class.**
+
+**I would like to ask the hotel company why they collected this data and how they planned on using the information.  I assume the intent was to limit lost revenue with cancellations, yet creating a discriminatory algorithm against middle and lower class people, as described above, would be unacceptable.**
+
 
 ## Bias and Fairness
 
