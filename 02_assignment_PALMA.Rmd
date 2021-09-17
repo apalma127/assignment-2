@@ -22,6 +22,7 @@ library(lubridate)         # for date manipulation
 library(moderndive)        # for King County housing data
 library(vip)               # for variable importance plots
 library(rmarkdown)         # for paged tables
+require(yardstick)
 theme_set(theme_minimal()) 
 ```
 
@@ -44,12 +45,12 @@ Link:  https://github.com/apalma127/assignment-2
   
   **When predicting if a booking results in a cancellation, I would expect the following to be predictive:** 
             1. **deposit_type**: odds are if someone placed a deposit, they are more committed to the stay than no deposit; also, non refundable I would bet results in little to no cancels compared to refundable.
-            2. **is_repeated_guest**:  if someone is a routine stayer, you would expect repeated guests to predict well verry little cancellations as they have reason to stay and also have in the past
-            3. **lead_time**: if booked a lot out in advancr, you would think there would be less of a chance of cancellation compared to a late booking as far out in advance bookings most likely revolve around events that have been planned for a while
+            2. **is_repeated_guest**:  if someone is a routine stayer, you would expect repeated guests to predict well very little cancellations as they have reason to stay and also have in the past
+            3. **lead_time**: if booked a lot out in advance, you would think there would be less of a chance of cancellation compared to a late booking because far out in advance bookings most likely revolve around events that have been planned for a while
   
   _ What are some problems that might exist with the data? You might think about how it was collected and who did the collecting.  
   
-  **One major problem is that this data is obtained and maintained by hotels who clearly have incentive to list to overstate how well they do.  By under reporting cancellations, the data may only reflect what the industry wants us to see: low amounts of cancellations, which reflect low amounts of lost revenue.  It is very quite possible heaps of cancellations are not included in this data to conceal some large sums of lost revenue that is being hidden.  I think this would be reporting bias.**
+  **One major problem is that this data is obtained and maintained by hotels who clearly have incentive to list and overstate how well they do.  By under reporting cancellations, the data may only reflect what the industry wants us to see: low amounts of cancellations, which reflect low amounts of lost revenue.  It is very quite possible heaps of cancellations are not included in this data to conceal some large sums of lost revenue being hidden.  I think this would be reporting bias.**
   
   
   - If we construct a model, what type of conclusions will be able to draw from it?  
@@ -73,19 +74,15 @@ hotels %>%
   facet_wrap(vars(variable), 
              scales = "free")
 ```
-
-
-
-
 **Missing Values and Points of Interest**
 
 - is_cancelled: is pretty evenly spread as it relates to cancelled or not; it also has a lot of points being over 100k
-- adr: looks funky with most rates seeming to be super similar; can't quite tell but not sure if there is enough distinction in rates just at first glance
-- adults: tough to tell but looks like most had only a handful, not a big spread of data
+- adr: looks funky with most rates seeming to be super similar; can't quite tell but not sure if there is enough distinction in rates just at first glance (granted the scale is a bit whack)
+- adults: tough to tell but looks like most had only a couple, not a big spread of data and also not very helpful because most rooms can only hold up to 2 to 4 adults
 - arrival_date_day_of_month: is a really weird variable but seems normally spread
 - arrival_date_week_number: is weird as well but is pretty normally spread as well
-- arrival_date_year: for some reason there are a lot of 
-
+- lead_time: very skewed right, possibly needing a log transformation if we need to use it a lot
+- previous_cancellations: also extremely right skewed but probably has most if not all 0's which would cause such a skew....probably not incredibly useful if there are as few prev cancellations as it appears
 
 
 3. First, we will do a couple things to get the data ready. 
@@ -108,7 +105,7 @@ hotels_mod <- hotels %>%
 set.seed(494)
 
 hotels_split <- initial_split(hotels_mod, 
-                             prop = .5)
+                             prop = .5, strata = is_canceled)
 hotels_split
 
 hotels_training <- training(hotels_split)
@@ -117,13 +114,6 @@ hotels_testing <- testing(hotels_split)
 
 4. In this next step, we are going to do the pre-processing. Usually, I won't tell you exactly what to do here, but for your first exercise, I'll tell you the steps. 
 
-* Set up the recipe with `is_canceled` as the outcome and all other variables as predictors (HINT: `~.`).  
-* Use a `step_XXX()` function or functions (I think there are other ways to do this, but I found `step_mutate_at()` easiest) to create some indicator variables for the following variables: `children`, `babies`, and `previous_cancellations`. So, the new variable should be a 1 if the original is more than 0 and 0 otherwise. Make sure you do this in a way that accounts for values that may be larger than any we see in the dataset.  
-* For the `agent` and `company` variables, make new indicator variables that are 1 if they have a value of `NULL` and 0 otherwise. I also used `step_mutate_at()` for this, but there's more ways you could do it.
-* Use `fct_lump_n()` inside `step_mutate()` to lump together countries that aren't in the top 5 most occurring. 
-* If you used new names for some of the new variables you created, then remove any variables that are no longer needed. 
-* Use `step_normalize()` to center and scale all the non-categorical predictor variables. (Do this BEFORE creating dummy variables. When I tried to do it after, I ran into an error - I'm still [investigating](https://community.rstudio.com/t/tidymodels-see-notes-error-but-only-with-step-xxx-functions-in-a-certain-order/115006) why.)
-* Create dummy variables for all factors/categorical predictor variables (make sure you have `-all_outcomes()` in this part!!).  
 * Use the `prep()` and `juice()` functions to apply the steps to the training data just to check that everything went as planned.
 
 ```{r}
@@ -154,28 +144,8 @@ hotels_recipe %>%
 
 **Lasso shrinks coefficients to 0 based on penalty terms.  It allows for more interpretable and meaningful coefficients for the more determinative variables.**
 
-* Define the model type, set the engine, set the `penalty` argument to `tune()` as a placeholder, and set the mode. 
-* Create a workflow with the recipe and model.  
 
 ```{r}
-#hotels_lasso_mod <- 
-  #logistic_reg(mixture = 1) %>% 
-  #set_engine("glm", family = "binomial") %>%
-  #set_args(penalty = tune()) %>%
-  #set_mode("classification")
-
-#hotels_lasso_mod <- 
-  #logistic_reg(penalty = tune(), mixture = 1) %>%
-  #set_engine("glmnet", family = "binomial") %>%
-  #set_mode("classification")
-
-#hotels_lasso_mod <-
-  #logistic_reg(
-  #engine = "glmnet",
-  #penalty = tune(),
-  #mode = "classification"
-  #)
-
 hotels_lasso_mod <- 
   logistic_reg(mixture = 1) %>% 
   set_engine("glmnet") %>% 
@@ -195,11 +165,6 @@ hotels_lasso_wf
 
 6. In this step, we'll tune the model and fit the model using the best tuning parameter to the entire training dataset.
 
-* Create a 5-fold cross-validation sample. We'll use this later. I have set the seed for you.  
-* Use the `grid_regular()` function to create a grid of 10 potential penalty parameters (we're keeping this sort of small because the dataset is pretty large). Use that with the 5-fold cv data to tune the model.  
-* Use the `tune_grid()` function to fit the models with different tuning parameters to the different cross-validation sets. 
-* Use the `collect_metrics()` function to collect all the metrics from the previous step and create a plot with the accuracy on the y-axis and the penalty term on the x-axis. Put the x-axis on the log scale.  
-* Use the `select_best()` function to find the best tuning parameter, fit the model using that tuning parameter to the entire training set (HINT: `finalize_workflow()` and `fit()`), and display the model results using `pull_workflow_fit()` and `tidy()`. 
 
 ```{r}
 set.seed(494) # for reproducibility
@@ -271,7 +236,7 @@ hotels_lasso_final_wf
 
 **Are there some variables with coefficients of 0?**
 
-**Yes but very few: arrival_date_month_September; market_segment_Undefined; distribution_channel_Undefined**
+**Yes but very few: arrival_date_month_February; market_segment_Groups; market_segment_Undefined; distribution_channel_Undefined; assigned_room_type_L; assigned_room_type_P**
 ```{r}
 hotels_lasso_final_mod <- hotels_lasso_final_wf %>% 
   fit(data = hotels_training)
@@ -284,9 +249,6 @@ hotels_lasso_final_mod %>%
 
 7. Now that we have a model, let's evaluate it a bit more. All we have looked at so far is the cross-validated accuracy from the previous step. 
 
-* Create a variable importance graph. Which variables show up as the most important? Are you surprised?  
-* Use the `last_fit()` function to fit the final model and then apply it to the testing data. Report the metrics from the testing data using the `collet_metrics()` function. How do they compare to the cross-validated metrics?
-
 ```{r}
 hotels_lasso_final_mod %>% 
   pull_workflow_fit() %>% 
@@ -296,6 +258,10 @@ hotels_lasso_final_mod %>%
 Which variables show up as the most important? Are you surprised?
 
 **reserved_room_type:  this makes sense.  this variable represents type of reservation so if something is reserved as an elite status suite you would expect different cancellations than a very small one bed commuter room.**
+
+**deposit_type_Non.Refun: this also makes sense and matches my prediction; a non refundable deposit porbably hardly ever has cancellations or at least has significantly less relative to refundable deposits.**
+
+**various room types: this matches common sense going through different room types.  In general the type of room seems like a good predictor of cancellations as some more higher end suites might have more cancellations as someone who can afford much higher end rooms may not be as concerned with losing deposits.**
 
 
 ```{r}
@@ -309,22 +275,35 @@ hotels_lasso_test %>%
 
 How do they compare to the cross-validated metrics?
 
-**This value of 0.813814 is roughly the same as the cv estimate of 0.8161259**
+**This value of 0.8126916 is so close (roughly the same) as the cv best estimate of 0.8145009.  That is good to see how the high 80% accuracy predicting the data used to create the model also results in a high 80% accuracy on new data.**
 
 
 * Use the `collect_predictions()` function to find the predicted probabilities and classes for the test data. Save this to a new dataset called `preds`. Then, use the `conf_mat()` function from `dials` (part of `tidymodels`) to create a confusion matrix showing the predicted classes vs. the true classes. Compute the true positive rate (sensitivity), true negative rate (specificity), and accuracy. See this [Wikipedia](https://en.wikipedia.org/wiki/Confusion_matrix) reference if you (like me) tend to forget these definitions. Also keep in mind that a "positive" in this case is a cancellation (those are the 1's). 
 
 
 ```{r}
+resampled <-
+hotels_lasso_final_mod %>%
+tune_grid(recipe = hotels_recipe, grid = grid, resamples = hotels_cv, control = ctrl)
 
 ```
+
+```{r}
+preds <-
+  collect_predictions(resampled) 
+```
+
+```{r}
+cm_hotels <- hotels_cv %>%
+  filter(Resample == "Fold01") %>%
+  conf_mat(obs, pred)
+cm_hotels
+```
+
 
 
 * Use the `preds` dataset you just created to create a density plot of the predicted probabilities of canceling (the variable is called `.pred_1`), filling by `is_canceled`. Use an `alpha = .5` and `color = NA` in the `geom_density()`. Answer these questions: 
 
-```{r}
-
-```
 
 
 a. What would this graph look like for a model with an accuracy that was close to 1?  
@@ -354,10 +333,10 @@ c. What happens to the true negative rate if we try to get a higher true positiv
 
 Matrix of Domination:
 
-**It is always important to wonder about who is collecting data and why.  Everyone an d every entity has a motive usually with self interest in mind.  Groups actively overlooked and harmed are ones who are excluded from the field and from datatsets.  By not being in the field, there may be little to no advocacy for this group which can directly lead to exclusion from data and datasets, which are used for consequential decisions like redistricting and policiing, leading to a negative chain of events.**
+**It is always important to wonder about who is collecting data and why.  Everyone and every entity has a motive usually with self interest in mind.  Groups actively overlooked and harmed are ones who are excluded from the field and from datatsets.  By not being in the field, there may be little to no advocacy for this group which can directly lead to exclusion from data and datasets, which are used for consequential decisions like redistricting and policing, leading to a negative chain of events.**
 
 Missing Data:
 
-**As soon as I read missing data I immediately think of census returns, seeing articles describing how NY ended up losing a seat because they were 89 residents short.  If 89 more people in the massive state of NY felt like filling out the census was as consequential as it was, NY would have retained its entirety of the influence it holds in the electoral college.  This could be from a lack of feeling liek you matter and the government has your best interests in mind as well as a failure of education.**       
+**As soon as I read missing data I immediately think of census returns, seeing articles describing how NY ended up losing a seat because they were 89 residents short.  If 89 more people in the massive state of NY felt like filling out the census was as consequential as it is, NY would have retained its entirety of the influence it holds in the electoral college.  This could be from a lack of feeling like you matter and the government has your best interests in mind as well as a failure of education.**       
 
 Interest/Goals: **It is extremely disheartening to hear about the many matrices and cycles of oppression throughout society.  One that has always baffled me has been the housing issue for people with criminal records.  If our system is meant to focus on rehab and reform (questionable), yet society is focused on punishing and pointing out, this inevitably leads to the cycle of recidivism, further burying people in a hopeless situation.**
